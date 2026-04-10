@@ -148,10 +148,15 @@ function truncate(hex, chars = 12) {
 async function apiPost(path, body, token) {
   const headers = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
-  const res = await fetch(path, { method: 'POST', headers, body: JSON.stringify(body) });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Request failed');
-  return data;
+  try {
+    const res = await fetch(path, { method: 'POST', headers, body: JSON.stringify(body) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Request failed');
+    return data;
+  } catch (err) {
+    if (err instanceof SyntaxError) throw new Error('Invalid server response');
+    throw err;
+  }
 }
 
 // ─── Handlers ───────────────────────────────────────────────────────────────

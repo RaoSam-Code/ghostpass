@@ -26,14 +26,22 @@ const JWT_EXPIRES_IN = '1h';
 const CHALLENGE_TTL_MS = 2 * 60 * 1000;
 
 // ─── Rate limiters ────────────────────────────────────────────────────────────
-// Restrict login-related endpoints to 10 requests per minute per IP to mitigate
-// brute-force attacks (passwords are never sent, but challenges are a resource).
+// Strict limiter for auth endpoints (challenge + verify) — prevents brute-force.
 const authLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many requests, please try again later.' },
+});
+
+// Registration limiter — prevents mass account creation (20 per hour per IP).
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many registration attempts, please try again later.' },
 });
 
 // General rate limiter for authenticated API routes.
@@ -81,7 +89,7 @@ function requireAuth(req, res, next) {
  *
  * The raw password is never transmitted or stored.
  */
-app.post('/api/register', (req, res) => {
+app.post('/api/register', registerLimiter, (req, res) => {
   const { username, salt, verifier } = req.body;
 
   if (!username || !salt || !verifier) {
