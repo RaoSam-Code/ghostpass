@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GhostPass — Zero-Knowledge Authentication</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+</head>
+<body>
+<div class="app">
+
+  <!-- ── Header ────────────────────────────────────────────────── -->
+  <header>
+    <a class="logo" href="#" onclick="showView('home'); return false;">
+      <!-- Ghost icon -->
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 10h.01M15 10h.01M12 2a8 8 0 0 0-8 8v12l3-3 2.5 2.5L12 19l2.5 2.5L17 19l3 3V10a8 8 0 0 0-8-8z"/>
+      </svg>
+      GhostPass
+    </a>
+    <span class="badge">Zero-Knowledge</span>
+  </header>
+
+  <!-- ── Main ──────────────────────────────────────────────────── -->
+  <main>
+
+    <!-- HOME VIEW -->
+    <div id="view-home" class="view active">
+      <section class="hero">
+        <h1>Authentication where<br/><span>the server never knows</span><br/>your password.</h1>
+        <p>
+          GhostPass uses client-side cryptography and a challenge-response protocol
+          so your password <strong>never leaves your browser</strong> — not even as a hash.
+        </p>
+        <div class="hero-actions">
+          <button class="btn btn-primary" style="width:auto;" onclick="showView('register')">Create account</button>
+          <button class="btn btn-outline" onclick="showView('login')">Sign in</button>
+        </div>
+      </section>
+
+      <div class="features">
+        <div class="feature">
+          <div class="feature-icon">🔐</div>
+          <h4>Zero-Knowledge Proof</h4>
+          <p>A mathematical proof verifies your identity without revealing your secret.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🧠</div>
+          <h4>Client-Side Crypto</h4>
+          <p>PBKDF2 key derivation and HMAC-SHA-256 run entirely in your browser.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🗄️</div>
+          <h4>No Secrets Stored</h4>
+          <p>The server stores only a mathematical verifier — zero exploitable credentials.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">⚡</div>
+          <h4>Challenge-Response</h4>
+          <p>Each login uses a fresh one-time server challenge, defeating replay attacks.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- REGISTER VIEW -->
+    <div id="view-register" class="view">
+      <div class="card">
+        <h2>Create account</h2>
+        <p class="subtitle">Your password is hashed in your browser. Only a cryptographic verifier is sent to the server.</p>
+
+        <form id="form-register" onsubmit="handleRegister(event)">
+          <div class="form-group">
+            <label for="reg-username">Username</label>
+            <input id="reg-username" type="text" autocomplete="username" placeholder="e.g. alice" required minlength="3" maxlength="64" />
+          </div>
+          <div class="form-group">
+            <label for="reg-password">Password</label>
+            <input id="reg-password" type="password" autocomplete="new-password" placeholder="Choose a strong password" required />
+          </div>
+          <div class="form-group">
+            <label for="reg-confirm">Confirm password</label>
+            <input id="reg-confirm" type="password" autocomplete="new-password" placeholder="Repeat your password" required />
+          </div>
+
+          <button id="btn-register" class="btn btn-primary" type="submit">Create account</button>
+
+          <div id="alert-register" class="alert"></div>
+        </form>
+
+        <div class="switch-link">Already have an account? <a onclick="showView('login')">Sign in</a></div>
+      </div>
+    </div>
+
+    <!-- LOGIN VIEW -->
+    <div id="view-login" class="view">
+      <div class="card">
+        <h2>Sign in</h2>
+        <p class="subtitle">A zero-knowledge proof authenticates you — your password stays on your device.</p>
+
+        <form id="form-login" onsubmit="handleLogin(event)">
+          <div class="form-group">
+            <label for="login-username">Username</label>
+            <input id="login-username" type="text" autocomplete="username" placeholder="Your username" required />
+          </div>
+          <div class="form-group">
+            <label for="login-password">Password</label>
+            <input id="login-password" type="password" autocomplete="current-password" placeholder="Your password" required />
+          </div>
+
+          <button id="btn-login" class="btn btn-primary" type="submit">Sign in</button>
+
+          <div id="alert-login" class="alert"></div>
+        </form>
+
+        <div class="switch-link">No account? <a onclick="showView('register')">Create one</a></div>
+      </div>
+    </div>
+
+    <!-- DASHBOARD VIEW -->
+    <div id="view-dashboard" class="view">
+      <div id="dashboard">
+        <div class="dash-header">
+          <h2>Welcome, <span id="dash-username"></span> 👋</h2>
+          <button class="btn btn-ghost" onclick="handleLogout()">Sign out</button>
+        </div>
+
+        <div class="pills">
+          <span class="pill pill-green">✓ Authenticated</span>
+          <span class="pill pill-purple">🔒 Zero-Knowledge Session</span>
+        </div>
+
+        <div class="info-grid">
+          <div class="info-card">
+            <div class="label">Signed in as</div>
+            <div class="value" id="info-user"></div>
+          </div>
+          <div class="info-card">
+            <div class="label">Session token (JWT)</div>
+            <div class="value" id="info-token"></div>
+          </div>
+          <div class="info-card">
+            <div class="label">Last challenge used</div>
+            <div class="value" id="info-challenge"></div>
+          </div>
+          <div class="info-card">
+            <div class="label">Proof sent to server</div>
+            <div class="value" id="info-proof"></div>
+          </div>
+        </div>
+
+        <div class="explainer">
+          <h3>How it worked — step by step</h3>
+          <ol>
+            <li><strong>Salt generated client-side:</strong> Your browser created a random 256-bit salt.</li>
+            <li><strong>PBKDF2 derivation:</strong> Your password was stretched using PBKDF2-SHA256 (100 000 iterations) to produce a <em>verifier</em>. The password itself was discarded immediately.</li>
+            <li><strong>Server challenge:</strong> The server issued a fresh one-time random 256-bit challenge.</li>
+            <li><strong>HMAC proof:</strong> Your browser computed <code>HMAC-SHA256(verifier, challenge)</code> entirely locally.</li>
+            <li><strong>Verification:</strong> The server recomputed the same HMAC using the stored verifier and confirmed the proof matched — without ever seeing your password.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
