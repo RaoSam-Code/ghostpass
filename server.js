@@ -36,6 +36,15 @@ const authLimiter = rateLimit({
   message: { error: 'Too many requests, please try again later.' },
 });
 
+// General rate limiter for authenticated API routes.
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later.' },
+});
+
 // ─── Helper: constant-time buffer comparison ─────────────────────────────────
 function safeEqual(a, b) {
   const bufA = Buffer.from(a, 'hex');
@@ -188,7 +197,7 @@ app.post('/api/verify', authLimiter, (req, res) => {
  * GET /api/me
  * Returns the currently authenticated user (requires Bearer token).
  */
-app.get('/api/me', requireAuth, (req, res) => {
+app.get('/api/me', apiLimiter, requireAuth, (req, res) => {
   return res.status(200).json({ username: req.user.sub });
 });
 
@@ -196,7 +205,7 @@ app.get('/api/me', requireAuth, (req, res) => {
  * POST /api/logout
  * Client simply discards the token; this endpoint confirms the action.
  */
-app.post('/api/logout', requireAuth, (req, res) => {
+app.post('/api/logout', apiLimiter, requireAuth, (req, res) => {
   return res.status(200).json({ message: 'Logged out successfully' });
 });
 

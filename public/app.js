@@ -126,9 +126,14 @@ function setLoading(btnId, loading) {
   btn.disabled = loading;
   if (loading) {
     btn.dataset.originalText = btn.textContent;
-    btn.innerHTML = '<span class="spinner"></span>&nbsp;Working…';
+    // Build the loading UI via DOM APIs to avoid innerHTML with user data
+    const spinner = document.createElement('span');
+    spinner.className = 'spinner';
+    btn.textContent = '';
+    btn.appendChild(spinner);
+    btn.appendChild(document.createTextNode('\u00a0Working\u2026'));
   } else {
-    // Restore via textContent to avoid re-interpreting stored text as HTML
+    // Restore via textContent — safe, no HTML re-interpretation
     btn.textContent = btn.dataset.originalText || '';
   }
 }
