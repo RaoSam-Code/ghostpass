@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
+const rateLimit = require('express-rate-limit');
 
 const app = express();
 app.use(express.json());
@@ -23,6 +24,17 @@ const JWT_EXPIRES_IN = '1h';
 
 // Challenge TTL: 2 minutes
 const CHALLENGE_TTL_MS = 2 * 60 * 1000;
+
+// ─── Rate limiters ────────────────────────────────────────────────────────────
+// Restrict login-related endpoints to 10 requests per minute per IP to mitigate
+// brute-force attacks (passwords are never sent, but challenges are a resource).
+const authLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later.' },
+});
 
 // ─── Helper: constant-time buffer comparison ─────────────────────────────────
 function safeEqual(a, b) {
@@ -56,7 +68,7 @@ function requireAuth(req, res, next) {
  *
  * The client has already:
  *   1. Generated a random salt
- *   2. Derived verifier = PBKDF2(password, salt, 100 000 iters, SHA-256)
+ *   2. Derived verifier = PBKDF2(password, salt, 100,000 iters, SHA-256)
  *
  * The raw password is never transmitted or stored.
  */
@@ -95,7 +107,7 @@ app.post('/api/register', (req, res) => {
  *   1. Derive verifier = PBKDF2(password, salt)
  *   2. Compute proof   = HMAC-SHA256(verifier, challenge)
  */
-app.post('/api/challenge', (req, res) => {
+app.post('/api/challenge', authLimiter, (req, res) => {
   const { username } = req.body;
   if (!username) {
     return res.status(400).json({ error: 'username is required' });
@@ -127,7 +139,7 @@ app.post('/api/challenge', (req, res) => {
  * The proof = HMAC-SHA256(verifier, challenge) computed entirely client-side.
  * Server recomputes the same HMAC and compares — password is never involved.
  */
-app.post('/api/verify', (req, res) => {
+app.post('/api/verify', authLimiter, (req, res) => {
   const { username, proof } = req.body;
   if (!username || !proof) {
     return res.status(400).json({ error: 'username and proof are required' });

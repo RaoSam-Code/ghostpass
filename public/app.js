@@ -66,7 +66,7 @@ async function deriveVerifier(password, saltHex) {
     {
       name: 'PBKDF2',
       salt: fromHex(saltHex),
-      iterations: 100_000,
+      iterations: 100_000, // 100,000 iterations
       hash: 'SHA-256',
     },
     keyMaterial,
@@ -128,7 +128,8 @@ function setLoading(btnId, loading) {
     btn.dataset.originalText = btn.textContent;
     btn.innerHTML = '<span class="spinner"></span>&nbsp;Working…';
   } else {
-    btn.innerHTML = btn.dataset.originalText || btn.textContent;
+    // Restore via textContent to avoid re-interpreting stored text as HTML
+    btn.textContent = btn.dataset.originalText || '';
   }
 }
 
@@ -161,8 +162,8 @@ async function handleRegister(event) {
   if (password !== confirm) {
     return setAlert('alert-register', 'error', 'Passwords do not match.');
   }
-  if (password.length < 8) {
-    return setAlert('alert-register', 'error', 'Password must be at least 8 characters.');
+  if (password.length < 12) {
+    return setAlert('alert-register', 'error', 'Password must be at least 12 characters.');
   }
 
   setLoading('btn-register', true);
